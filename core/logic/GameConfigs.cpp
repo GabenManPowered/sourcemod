@@ -1099,6 +1099,59 @@ bool CGameConfig::GetMemSig(const char *key, void **addr)
 	return m_Sigs.retrieve(key, addr);
 }
 
+size_t CGameConfig::StringToSignature(const char *str, char buffer[], size_t maxlength)
+{
+	size_t real_bytes = 0;
+	size_t length = strlen(str);
+
+	for (size_t i=0; i<length; i++)
+	{
+		if (real_bytes >= maxlength)
+		{
+			break;
+		}
+		buffer[real_bytes++] = (unsigned char)str[i];
+		if (str[i] == '\\'
+			&& str[i+1] == 'x')
+		{
+			if (i + 3 >= length)
+			{
+				continue;
+			}
+			/* Get the hex part */
+			char s_byte[3];
+			int r_byte;
+			s_byte[0] = str[i+2];
+			s_byte[1] = str[i+3];
+			s_byte[2] = '\n';
+			/* Read it as an integer */
+			sscanf(s_byte, "%x", &r_byte);
+			/* Save the value */
+			buffer[real_bytes-1] = (unsigned char)r_byte;
+			/* Adjust index */
+			i += 3;
+		}
+	}
+
+	return real_bytes;
+}
+
+bool CGameConfig::VerifySignature(const void *addr, const char *sig, size_t len)
+{
+	unsigned char *addr1 = (unsigned char *) addr;
+	unsigned char *addr2 = (unsigned char *) sig;
+
+	for (size_t i = 0; i < len; i++)
+	{
+		if (addr2[i] == '*')
+			continue;
+		if (addr1[i] != addr2[i])
+			return false;
+	}
+
+	return true;
+}
+
 GameConfigManager::GameConfigManager()
 {
 }
