@@ -1445,9 +1445,29 @@ CPlayer *PlayerManager::GetPlayerByIndex(int client) const
 	return &m_Players[client];
 }
 
-int PlayerManager::GetNumPlayers()
+int PlayerManager::GetNumPlayers(const bool inGameOnly)
 {
-	return m_PlayerCount;
+	int count = 0;
+	
+	if (inGameOnly)
+	{
+		count = m_PlayerCount;
+	}
+	else
+	{
+		for ( int i = 0; i < iserver->GetClientCount(); i++ )
+		{
+		
+			IClient *client = iserver->GetClient( i );
+			
+			if ( !client->IsConnected() )
+				continue; // not connected yet, maybe challenging
+			
+			count++;
+		}
+	}
+	
+	return count;
 }
 
 int PlayerManager::GetClientOfUserId(int userid)
