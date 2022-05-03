@@ -98,6 +98,26 @@ namespace SourceMod
 		 * @return				True on success, false on failure.
 		 */
 		virtual bool GetAddress(const char *key, void **addr) =0;
+		
+		/**
+		 * @brief Convert signature string to signature bytes.
+		 *
+		 * @param str			String to convert.
+		 * @param buffer          Buffer to store the signature.
+		 * @param maxlength          Maxlength of the buffer.
+		 * @return				True on success, false on failure.
+		 */
+		virtual size_t StringToSignature(const char *str, char buffer[], size_t maxlength) =0;
+		
+		/**
+		 * @brief Retrieves the value of an address from the "Address" section.
+		 *
+		 * @param addr			Address of the function.
+		 * @param sig          Signature to check.
+		 * @param len          Size of the signature.
+		 * @return				True on success, false on failure.
+		 */
+		virtual bool VerifySignature(const void *addr, const char *sig, size_t len) =0;
 	};
 
 	/**
