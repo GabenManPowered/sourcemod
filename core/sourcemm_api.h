@@ -33,6 +33,7 @@
 #define _INCLUDE_SOURCEMOD_MM_API_H_
 
 #include "sm_convar.h"
+#include <iserver.h>
 #include <ISmmPlugin.h>
 #include <eiface.h>
 #include <igameevents.h>
@@ -70,11 +71,14 @@ public:
 	void *OnMetamodQuery(const char *iface, int *ret);
 };
 
+void GetIServer();
+
 extern SourceMod_Core g_SourceMod_Core;
 extern IVEngineServer *engine;
 extern IServerGameDLL *gamedll;
 extern IServerGameClients *serverClients;
 extern ICvar *icvar;
+extern IServer *iserver;
 extern ISmmPluginManager *g_pMMPlugins;
 extern CGlobalVars *gpGlobals;
 extern IGameEventManager2 *gameevents;
