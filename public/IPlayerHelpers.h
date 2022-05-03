@@ -543,9 +543,10 @@ namespace SourceMod
 		/**
 		 * @brief Returns the number of players currently connected.
 		 *
+		 * @param inGameOnly		If false connecting players are also counted.
 		 * @return				Current number of connected clients.
 		 */
-		virtual int GetNumPlayers() =0;
+		virtual int GetNumPlayers(const bool inGameOnly) =0;
 
 		/**
 		 * @brief Returns the client index by its userid.
