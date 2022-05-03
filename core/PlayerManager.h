@@ -202,7 +202,7 @@ public: //IPlayerManager
 	IGamePlayer *GetGamePlayer(int client);
 	IGamePlayer *GetGamePlayer(edict_t *pEdict);
 	int GetMaxClients();
-	int GetNumPlayers();
+	int GetNumPlayers(const bool inGameOnly);
 	int GetClientOfUserId(int userid);
 	bool IsServerActivated();
 	int FilterCommandTarget(IGamePlayer *pAdmin, IGamePlayer *pTarget, int flags);
