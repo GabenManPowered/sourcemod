@@ -67,6 +67,8 @@ public: //IGameConfig
 	SendProp *GetSendProp(const char *key);
 	bool GetMemSig(const char *key, void **addr);
 	bool GetAddress(const char *key, void **addr);
+	size_t StringToSignature(const char *str, char buffer[], size_t maxlength);
+	bool VerifySignature(const void *addr, const char *sig, size_t len);
 public: //NameHashSet
 	static inline bool matches(const char *key, const CGameConfig *value)
 	{
