@@ -39,6 +39,23 @@
 #include "provider.h"
 #include <IExtensionSys.h>
 #include <bridge/include/ILogger.h>
+#include <IGameConfigs.h>
+
+#ifdef PLATFORM_X64
+#define KEY_SUFFIX "64"
+#else
+#define KEY_SUFFIX ""
+#endif
+
+#if defined PLATFORM_WINDOWS
+#define FAKECLIENT_KEY "CreateFakeClient_Windows" KEY_SUFFIX
+#elif defined PLATFORM_LINUX
+#define FAKECLIENT_KEY "CreateFakeClient_Linux" KEY_SUFFIX
+#elif defined PLATFORM_APPLE
+#define FAKECLIENT_KEY "CreateFakeClient_Mac" KEY_SUFFIX
+#else
+#error "Unsupported platform"
+#endif
 
 SourceMod_Core g_SourceMod_Core;
 IVEngineServer *engine = NULL;
@@ -47,6 +64,7 @@ IServerGameClients *serverClients = NULL;
 ISmmPluginManager *g_pMMPlugins = NULL;
 CGlobalVars *gpGlobals = NULL;
 ICvar *icvar = NULL;
+IServer *iserver = NULL;
 IGameEventManager2 *gameevents = NULL;
 CallClass<IVEngineServer> *enginePatch = NULL;
 CallClass<IServerGameDLL> *gamedllPatch = NULL;
@@ -123,6 +141,8 @@ bool SourceMod_Core::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen
 	{
 		g_SMAPI->EnableVSPListener();
 	}
+	
+	GetIServer();
 
 	return g_SourceMod.InitializeSourceMod(error, maxlen, late);
 }
@@ -238,4 +258,77 @@ void *SourceMod_Core::OnMetamodQuery(const char *iface, int *ret)
 	}
 
 	return ptr;
+}
+
+void GetIServer()
+{
+#if SOURCE_ENGINE == SE_TF2        \
+	|| SOURCE_ENGINE == SE_DODS    \
+	|| SOURCE_ENGINE == SE_HL2DM   \
+	|| SOURCE_ENGINE == SE_CSS     \
+	|| SOURCE_ENGINE == SE_SDK2013 \
+	|| SOURCE_ENGINE == SE_BMS     \
+	|| SOURCE_ENGINE == SE_DOI     \
+	|| SOURCE_ENGINE == SE_BLADE   \
+	|| SOURCE_ENGINE == SE_INSURGENCY
+
+#if SOURCE_ENGINE == SE_SDK2013
+	if (g_SMAPI->GetEngineFactory(false)("VEngineServer022", nullptr))
+#endif // SE_SDK2013
+	{
+		iserver = engine->GetIServer();
+		return;
+	}
+#endif
+
+	void *addr;
+	const char *sigstr;
+	char sig[32];
+	size_t siglen;
+	int offset;
+	void *vfunc = NULL;
+
+	/* Use the symbol if it exists */
+	if (g_pGameConf->GetMemSig("sv", &addr) && addr)
+	{
+		iserver = reinterpret_cast<IServer *>(addr);
+		return;
+	}
+
+	/* Get the CreateFakeClient function pointer */
+	if (!(vfunc=SH_GET_ORIG_VFNPTR_ENTRY(engine, &IVEngineServer::CreateFakeClient)))
+	{
+		return;
+	}
+
+	/* Get signature string for IVEngineServer::CreateFakeClient() */
+	sigstr = g_pGameConf->GetKeyValue(FAKECLIENT_KEY);
+
+	if (!sigstr)
+	{
+		return;
+	}
+
+	/* Convert signature string to signature bytes */
+	siglen = g_pGameConf->StringToSignature(sigstr, sig, sizeof(sig));
+
+	/* Check if we're on the expected function */
+	if (!g_pGameConf->VerifySignature(vfunc, sig, siglen))
+	{
+		return;
+	}
+
+	/* Get the offset into CreateFakeClient */
+	if (!g_pGameConf->GetOffset("sv", &offset))
+	{
+		return;
+	}
+
+	/* Finally we have the interface we were looking for */
+#ifdef PLATFORM_X86
+	iserver = *reinterpret_cast<IServer **>(reinterpret_cast<unsigned char *>(vfunc) + offset);
+#elif defined PLATFORM_X64
+	int32_t varOffset = *reinterpret_cast<int32_t *>(reinterpret_cast<unsigned char *>(vfunc) + offset);
+	iserver = reinterpret_cast<IServer *>(reinterpret_cast<unsigned char *>(vfunc) + offset + sizeof(int32_t) + varOffset);
+#endif
 }
